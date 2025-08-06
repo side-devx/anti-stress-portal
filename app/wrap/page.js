@@ -81,4 +81,8 @@ export default function BubbleWrap() {
 
   return (
     <canvas
-
+      ref={canvasRef}
+      className="w-full h-full bg-gradient-to-b from-gray-300 to-gray-500"
+    />
+  );
+}
