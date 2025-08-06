@@ -5,6 +5,7 @@ import { Howl } from "howler";
 export default function BubblePop() {
   const [gameFinished, setGameFinished] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
+  const [flash, setFlash] = useState(false);
 
   useEffect(() => {
     const canvas = document.getElementById("bubbleCanvas");
@@ -13,18 +14,12 @@ export default function BubblePop() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Suara ledakan balon
-const blastSounds = [
-  new Howl({ src: ["/sounds/balloon_blast1.mp3"], volume: 0.8 }),
-  new Howl({ src: ["/sounds/balloon_blast2.mp3"], volume: 0.8 }),
-  new Howl({ src: ["/sounds/balloon_blast3.mp3"], volume: 0.8 })
-];
-
-// Saat bubble dibuat
-this.soundIndex = this.radius > 40 ? 2 : this.radius > 30 ? 1 : 0;
-
-// Saat pop()
-blastSounds[this.soundIndex].play();
+    // Variasi suara ledakan balon sesuai ukuran
+    const blastSounds = [
+      new Howl({ src: ["/sounds/balloon_blast1.mp3"], volume: 0.8 }), // kecil
+      new Howl({ src: ["/sounds/balloon_blast2.mp3"], volume: 0.8 }), // sedang
+      new Howl({ src: ["/sounds/balloon_blast3.mp3"], volume: 0.8 })  // besar
+    ];
 
     const colors = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF"];
     const bubbleCount = 30;
@@ -34,7 +29,7 @@ blastSounds[this.soundIndex].play();
     let particles = [];
     let score = 0;
 
-    // Buat bubble
+    // Bubble class
     class Bubble {
       constructor() {
         this.x = Math.random() * canvas.width;
@@ -44,6 +39,15 @@ blastSounds[this.soundIndex].play();
         this.vx = (Math.random() - 0.5) * 2.5;
         this.vy = (Math.random() - 0.5) * 2.5;
         this.popped = false;
+
+        // Tentukan index suara berdasarkan ukuran bubble
+        if (this.radius > 40) {
+          this.soundIndex = 2; // besar
+        } else if (this.radius > 30) {
+          this.soundIndex = 1; // sedang
+        } else {
+          this.soundIndex = 0; // kecil
+        }
       }
       update() {
         if (!this.popped) {
@@ -64,8 +68,12 @@ blastSounds[this.soundIndex].play();
       }
       pop() {
         this.popped = true;
-        blastSound.play();
+        blastSounds[this.soundIndex].play();
         score += 10;
+
+        // Flash putih cepat
+        setFlash(true);
+        setTimeout(() => setFlash(false), 100);
 
         // Efek poin
         points.push({
@@ -75,17 +83,17 @@ blastSounds[this.soundIndex].play();
           alpha: 1
         });
 
-        // Efek ledakan partikel besar
+        // Efek partikel
         for (let i = 0; i < 30; i++) {
           particles.push(new Particle(this.x, this.y, this.color));
         }
 
-        // Cek kalau semua bubble sudah pecah
+        // Jika semua bubble sudah pecah
         if (bubbles.every(b => b.popped)) {
           setTimeout(() => {
             setFinalScore(score);
             setGameFinished(true);
-          }, 600); // jeda animasi terakhir
+          }, 600);
         }
       }
     }
@@ -97,7 +105,7 @@ blastSounds[this.soundIndex].play();
         this.y = y;
         this.color = color;
         this.radius = 2 + Math.random() * 4;
-        this.vx = (Math.random() - 0.5) * 10; // lebih cepat
+        this.vx = (Math.random() - 0.5) * 10;
         this.vy = (Math.random() - 0.5) * 10;
         this.alpha = 1;
       }
@@ -135,7 +143,7 @@ blastSounds[this.soundIndex].play();
       });
     }
 
-    // Inisialisasi bubble
+    // Inisialisasi bubbles
     for (let i = 0; i < bubbleCount; i++) {
       bubbles.push(new Bubble());
     }
@@ -172,7 +180,7 @@ blastSounds[this.soundIndex].play();
 
       drawPoints();
 
-      // Tampilkan skor
+      // Skor
       ctx.font = "28px Arial";
       ctx.fillStyle = "#fff";
       ctx.fillText(`Score: ${score}`, 20, 40);
@@ -185,6 +193,11 @@ blastSounds[this.soundIndex].play();
 
   return (
     <>
+      {/* Flash overlay */}
+      {flash && (
+        <div className="absolute inset-0 bg-white opacity-70 transition-opacity duration-100 pointer-events-none"></div>
+      )}
+
       <canvas
         id="bubbleCanvas"
         className="w-full h-full bg-gradient-to-b from-blue-400 to-purple-600"
