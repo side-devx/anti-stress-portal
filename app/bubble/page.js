@@ -3,14 +3,13 @@ import { useEffect, useState } from "react";
 import { Howl } from "howler";
 
 export default function BubblePop() {
-  const GAME_DURATION = 30; // detik
+  const GAME_DURATION = 30;
 
   const [gameFinished, setGameFinished] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
-  const [highScore, setHighScore] = useState(0);
-  const [newRecord, setNewRecord] = useState(false);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [newRecord, setNewRecord] = useState(false);
 
   useEffect(() => {
     const canvas = document.getElementById("bubbleCanvas");
@@ -210,9 +209,6 @@ export default function BubblePop() {
       ctx.fillStyle = "#fff";
       ctx.fillText(`Score: ${score}`, 20, 40);
 
-      // Timer
-      ctx.fillText(`Time: ${timeLeft}s`, canvas.width - 140, 40);
-
       if (!gameFinished) requestAnimationFrame(animate);
     }
 
@@ -229,19 +225,24 @@ export default function BubblePop() {
 
     let scores = JSON.parse(localStorage.getItem("bubbleScores")) || [];
     scores.push({ time: timestamp, score });
-    scores.sort((a, b) => b.score - a.score); // urutkan highest
+    scores.sort((a, b) => b.score - a.score);
 
-    // Simpan high score
     if (scores.length > 0 && score === scores[0].score) {
       setNewRecord(true);
     }
 
-    setHighScore(scores[0]?.score || 0);
-
-    // Simpan ke localStorage
     localStorage.setItem("bubbleScores", JSON.stringify(scores));
-    setLeaderboard(scores.slice(0, 5)); // top 5
+    setLeaderboard(scores.slice(0, 5));
   }
+
+  // Hitung warna progress bar
+  const getTimerColor = () => {
+    if (timeLeft > 20) return "text-green-400 border-green-400";
+    if (timeLeft > 10) return "text-yellow-400 border-yellow-400";
+    return "text-red-500 border-red-500 animate-pulse";
+  };
+
+  const timerPercentage = (timeLeft / 30) * 100;
 
   return (
     <>
@@ -250,37 +251,51 @@ export default function BubblePop() {
         className="w-full h-full bg-gradient-to-b from-blue-400 to-purple-600"
       ></canvas>
 
+      {/* Timer animasi */}
+      {!gameFinished && (
+        <div className="absolute top-4 right-4 flex items-center justify-center">
+          <div
+            className={`relative w-20 h-20 rounded-full border-4 ${getTimerColor()} flex items-center justify-center`}
+            style={{
+              background: `conic-gradient(currentColor ${timerPercentage}%, transparent 0%)`
+            }}
+          >
+            <span className="absolute text-white text-xl font-bold">
+              {timeLeft}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Overlay Game Selesai */}
       {gameFinished && (
-        <>
-          <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/60 animate-fadein">
-            <h1 className="text-6xl font-bold text-white animate-bounce">
-              Game Over
-            </h1>
-            <p className="text-2xl text-white mt-4">Skor Kamu: {finalScore}</p>
-            {newRecord && (
-              <p className="text-yellow-300 text-xl mt-2 animate-pulse">
-                Rekor Baru! 🎉
-              </p>
-            )}
+        <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/60 animate-fadein">
+          <h1 className="text-6xl font-bold text-white animate-bounce">
+            Game Over
+          </h1>
+          <p className="text-2xl text-white mt-4">Skor Kamu: {finalScore}</p>
+          {newRecord && (
+            <p className="text-yellow-300 text-xl mt-2 animate-pulse">
+              Rekor Baru! 🎉
+            </p>
+          )}
 
-            <h2 className="text-2xl text-white mt-6">Leaderboard</h2>
-            <ul className="text-white mt-2">
-              {leaderboard.map((entry, index) => (
-                <li key={index}>
-                  {entry.time} - {entry.score}
-                </li>
-              ))}
-            </ul>
+          <h2 className="text-2xl text-white mt-6">Leaderboard</h2>
+          <ul className="text-white mt-2">
+            {leaderboard.map((entry, index) => (
+              <li key={index}>
+                {entry.time} - {entry.score}
+              </li>
+            ))}
+          </ul>
 
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-6 px-6 py-3 bg-white text-black rounded-lg shadow hover:scale-105 transition"
-            >
-              Main Lagi
-            </button>
-          </div>
-        </>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 px-6 py-3 bg-white text-black rounded-lg shadow hover:scale-105 transition"
+          >
+            Main Lagi
+          </button>
+        </div>
       )}
     </>
   );
