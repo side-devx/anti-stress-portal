@@ -14,7 +14,17 @@ export default function BubblePop() {
     canvas.height = window.innerHeight;
 
     // Suara ledakan balon
-    const blastSound = new Howl({ src: ["/sounds/balloon_blast.mp3"], volume: 0.8 });
+const blastSounds = [
+  new Howl({ src: ["/sounds/balloon_blast1.mp3"], volume: 0.8 }),
+  new Howl({ src: ["/sounds/balloon_blast2.mp3"], volume: 0.8 }),
+  new Howl({ src: ["/sounds/balloon_blast3.mp3"], volume: 0.8 })
+];
+
+// Saat bubble dibuat
+this.soundIndex = this.radius > 40 ? 2 : this.radius > 30 ? 1 : 0;
+
+// Saat pop()
+blastSounds[this.soundIndex].play();
 
     const colors = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF"];
     const bubbleCount = 30;
