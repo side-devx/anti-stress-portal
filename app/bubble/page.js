@@ -1,8 +1,11 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Howl } from "howler";
 
 export default function BubblePop() {
+  const [gameFinished, setGameFinished] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
+
   useEffect(() => {
     const canvas = document.getElementById("bubbleCanvas");
     const ctx = canvas.getContext("2d");
@@ -10,14 +13,8 @@ export default function BubblePop() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Suara variasi
-    const popSounds = [
-      new Howl({ src: ["/sounds/pop1.mp3"], volume: 0.5 }),
-      new Howl({ src: ["/sounds/pop2.mp3"], volume: 0.5 }),
-      new Howl({ src: ["/sounds/pop3.mp3"], volume: 0.5 }),
-      new Howl({ src: ["/sounds/pop4.mp3"], volume: 0.5 }),
-      new Howl({ src: ["/sounds/pop5.mp3"], volume: 0.5 }),
-    ];
+    // Suara ledakan balon
+    const blastSound = new Howl({ src: ["/sounds/balloon_blast.mp3"], volume: 0.8 });
 
     const colors = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF"];
     const bubbleCount = 30;
@@ -27,11 +24,9 @@ export default function BubblePop() {
     let particles = [];
     let score = 0;
 
+    // Buat bubble
     class Bubble {
       constructor() {
-        this.reset();
-      }
-      reset() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
         this.radius = 20 + Math.random() * 30;
@@ -39,7 +34,6 @@ export default function BubblePop() {
         this.vx = (Math.random() - 0.5) * 2.5;
         this.vy = (Math.random() - 0.5) * 2.5;
         this.popped = false;
-        this.soundIndex = Math.floor(Math.random() * popSounds.length);
       }
       update() {
         if (!this.popped) {
@@ -60,7 +54,7 @@ export default function BubblePop() {
       }
       pop() {
         this.popped = true;
-        popSounds[this.soundIndex].play();
+        blastSound.play();
         score += 10;
 
         // Efek poin
@@ -71,9 +65,17 @@ export default function BubblePop() {
           alpha: 1
         });
 
-        // Efek partikel ledakan
-        for (let i = 0; i < 10; i++) {
+        // Efek ledakan partikel besar
+        for (let i = 0; i < 30; i++) {
           particles.push(new Particle(this.x, this.y, this.color));
+        }
+
+        // Cek kalau semua bubble sudah pecah
+        if (bubbles.every(b => b.popped)) {
+          setTimeout(() => {
+            setFinalScore(score);
+            setGameFinished(true);
+          }, 600); // jeda animasi terakhir
         }
       }
     }
@@ -84,9 +86,9 @@ export default function BubblePop() {
         this.x = x;
         this.y = y;
         this.color = color;
-        this.radius = 3 + Math.random() * 3;
-        this.vx = (Math.random() - 0.5) * 6;
-        this.vy = (Math.random() - 0.5) * 6;
+        this.radius = 2 + Math.random() * 4;
+        this.vx = (Math.random() - 0.5) * 10; // lebih cepat
+        this.vy = (Math.random() - 0.5) * 10;
         this.alpha = 1;
       }
       update() {
@@ -103,7 +105,6 @@ export default function BubblePop() {
       }
     }
 
-    // Helper konversi HEX ke RGB
     function hexToRgb(hex) {
       const bigint = parseInt(hex.slice(1), 16);
       const r = (bigint >> 16) & 255;
@@ -124,15 +125,10 @@ export default function BubblePop() {
       });
     }
 
-    // Inisialisasi bubbles
-    function initBubbles() {
-      bubbles = [];
-      for (let i = 0; i < bubbleCount; i++) {
-        bubbles.push(new Bubble());
-      }
+    // Inisialisasi bubble
+    for (let i = 0; i < bubbleCount; i++) {
+      bubbles.push(new Bubble());
     }
-
-    initBubbles();
 
     // Klik bubble
     canvas.addEventListener("click", (e) => {
@@ -148,14 +144,6 @@ export default function BubblePop() {
           }
         }
       });
-    });
-
-    // Reset tombol
-    document.getElementById("resetBtn").addEventListener("click", () => {
-      score = 0;
-      initBubbles();
-      particles = [];
-      points = [];
     });
 
     // Animasi utama
@@ -187,16 +175,24 @@ export default function BubblePop() {
 
   return (
     <>
-      <button
-        id="resetBtn"
-        className="absolute top-4 right-4 px-4 py-2 bg-white/70 rounded-lg shadow hover:bg-white"
-      >
-        Reset
-      </button>
       <canvas
         id="bubbleCanvas"
         className="w-full h-full bg-gradient-to-b from-blue-400 to-purple-600"
       ></canvas>
+
+      {/* Overlay Selamat */}
+      {gameFinished && (
+        <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/60 animate-fadein">
+          <h1 className="text-6xl font-bold text-white animate-bounce">SELAMAT!</h1>
+          <p className="text-2xl text-white mt-4">Skor Kamu: {finalScore}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 px-6 py-3 bg-white text-black rounded-lg shadow hover:scale-105 transition"
+          >
+            Main Lagi
+          </button>
+        </div>
+      )}
     </>
   );
 }
