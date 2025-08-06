@@ -5,7 +5,6 @@ import { Howl } from "howler";
 export default function BubblePop() {
   const [gameFinished, setGameFinished] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
-  const [flash, setFlash] = useState(false);
 
   useEffect(() => {
     const canvas = document.getElementById("bubbleCanvas");
@@ -14,11 +13,11 @@ export default function BubblePop() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Variasi suara ledakan balon sesuai ukuran
+    // Variasi suara ledakan balon
     const blastSounds = [
-      new Howl({ src: ["/sounds/balloon_blast1.mp3"], volume: 0.8 }), // kecil
-      new Howl({ src: ["/sounds/balloon_blast2.mp3"], volume: 0.8 }), // sedang
-      new Howl({ src: ["/sounds/balloon_blast3.mp3"], volume: 0.8 })  // besar
+      new Howl({ src: ["/sounds/balloon_blast1.mp3"], volume: 0.8 }),
+      new Howl({ src: ["/sounds/balloon_blast2.mp3"], volume: 0.8 }),
+      new Howl({ src: ["/sounds/balloon_blast3.mp3"], volume: 0.8 })
     ];
 
     const colors = ["#FFB3BA", "#FFDFBA", "#FFFFBA", "#BAFFC9", "#BAE1FF"];
@@ -40,14 +39,10 @@ export default function BubblePop() {
         this.vy = (Math.random() - 0.5) * 2.5;
         this.popped = false;
 
-        // Tentukan index suara berdasarkan ukuran bubble
-        if (this.radius > 40) {
-          this.soundIndex = 2; // besar
-        } else if (this.radius > 30) {
-          this.soundIndex = 1; // sedang
-        } else {
-          this.soundIndex = 0; // kecil
-        }
+        // Tentukan suara berdasar ukuran
+        if (this.radius > 40) this.soundIndex = 2;
+        else if (this.radius > 30) this.soundIndex = 1;
+        else this.soundIndex = 0;
       }
       update() {
         if (!this.popped) {
@@ -71,10 +66,6 @@ export default function BubblePop() {
         blastSounds[this.soundIndex].play();
         score += 10;
 
-        // Flash putih cepat
-        setFlash(true);
-        setTimeout(() => setFlash(false), 100);
-
         // Efek poin
         points.push({
           x: this.x,
@@ -83,12 +74,12 @@ export default function BubblePop() {
           alpha: 1
         });
 
-        // Efek partikel
+        // Partikel ledakan
         for (let i = 0; i < 30; i++) {
           particles.push(new Particle(this.x, this.y, this.color));
         }
 
-        // Jika semua bubble sudah pecah
+        // Cek semua bubble pecah
         if (bubbles.every(b => b.popped)) {
           setTimeout(() => {
             setFinalScore(score);
@@ -143,7 +134,7 @@ export default function BubblePop() {
       });
     }
 
-    // Inisialisasi bubbles
+    // Inisialisasi bubble
     for (let i = 0; i < bubbleCount; i++) {
       bubbles.push(new Bubble());
     }
@@ -191,13 +182,58 @@ export default function BubblePop() {
     animate();
   }, []);
 
+  // Confetti animasi
+  useEffect(() => {
+    if (!gameFinished) return;
+    const confettiCanvas = document.getElementById("confettiCanvas");
+    const ctx = confettiCanvas.getContext("2d");
+
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+
+    const confettiCount = 150;
+    const confetti = [];
+
+    for (let i = 0; i < confettiCount; i++) {
+      confetti.push({
+        x: Math.random() * confettiCanvas.width,
+        y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+        r: Math.random() * 6 + 4,
+        d: Math.random() * 150 + 50,
+        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+        tilt: Math.random() * 10 - 10
+      });
+    }
+
+    function drawConfetti() {
+      ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      confetti.forEach((c) => {
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2, false);
+        ctx.fillStyle = c.color;
+        ctx.fill();
+        ctx.closePath();
+      });
+
+      updateConfetti();
+      requestAnimationFrame(drawConfetti);
+    }
+
+    function updateConfetti() {
+      confetti.forEach((c) => {
+        c.y += 2 + Math.random() * 3;
+        if (c.y > confettiCanvas.height) {
+          c.y = -10;
+          c.x = Math.random() * confettiCanvas.width;
+        }
+      });
+    }
+
+    drawConfetti();
+  }, [gameFinished]);
+
   return (
     <>
-      {/* Flash overlay */}
-      {flash && (
-        <div className="absolute inset-0 bg-white opacity-70 transition-opacity duration-100 pointer-events-none"></div>
-      )}
-
       <canvas
         id="bubbleCanvas"
         className="w-full h-full bg-gradient-to-b from-blue-400 to-purple-600"
@@ -205,16 +241,22 @@ export default function BubblePop() {
 
       {/* Overlay Selamat */}
       {gameFinished && (
-        <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/60 animate-fadein">
-          <h1 className="text-6xl font-bold text-white animate-bounce">SELAMAT!</h1>
-          <p className="text-2xl text-white mt-4">Skor Kamu: {finalScore}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-6 px-6 py-3 bg-white text-black rounded-lg shadow hover:scale-105 transition"
-          >
-            Main Lagi
-          </button>
-        </div>
+        <>
+          <canvas
+            id="confettiCanvas"
+            className="absolute inset-0 pointer-events-none"
+          ></canvas>
+          <div className="absolute inset-0 flex flex-col justify-center items-center bg-black/60 animate-fadein">
+            <h1 className="text-6xl font-bold text-white animate-bounce">SELAMAT!</h1>
+            <p className="text-2xl text-white mt-4">Skor Kamu: {finalScore}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-6 px-6 py-3 bg-white text-black rounded-lg shadow hover:scale-105 transition"
+            >
+              Main Lagi
+            </button>
+          </div>
+        </>
       )}
     </>
   );
